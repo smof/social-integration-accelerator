@@ -1,0 +1,51 @@
+{
+  "metadata" : {
+    "realm" : "/",
+    "amsterVersion" : "14.0.0",
+    "entityType" : "OAuth2Module",
+    "entityId" : "MySocialAuthenticationModule",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "MySocialAuthenticationModule",
+    "mixUpMitigation" : false,
+    "ssoProxyUrl" : "https://am5.theidentitycookbook.com:8443/openam/oauth2c/OAuthProxy.jsp",
+    "authenticationLevel" : 0,
+    "accountMapperClass" : "org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper",
+    "accountMapperConfiguration" : [ "email=uid" ],
+    "oauth2LogoutServiceUrl" : null,
+    "anonymousUserName" : "anonymous",
+    "mailGatewayClass" : "org.forgerock.openam.authentication.modules.oauth2.DefaultEmailGatewayImpl",
+    "oauth2EmailAttribute" : null,
+    "smtpHostName" : "localhost",
+    "smtpSslEnabled" : false,
+    "userProfileServiceUrl" : "https://login.salesforce.com/services/oauth2/userinfo",
+    "openidConnectContextValue" : "https://login.salesforce.com/id/keys",
+    "promptForPassword" : false,
+    "smtpFromAddress" : "info@forgerock.com",
+    "accessTokenParameterName" : "access_token",
+    "smtpHostPort" : "25",
+    "scope" : "id api web full chatter_api visualforce refresh_token openid profile email address phone offline_access custom_permissions wave_api eclair_api",
+    "saveAttributesInSession" : true,
+    "openidConnectIssuer" : "https://login.salesforce.com",
+    "attributeMapperConfiguration" : ["given_name=givenName", "email=uid", "family_name=sn", "name=cn", "email=mail"],
+    "smtpUsername" : null,
+    "clientSecret" : null,
+    "openidConnectContextType" : "jwk_url",
+    "authenticationEndpointUrl" : "https://login.salesforce.com/services/oauth2/authorize",
+    "accessTokenEndpointUrl" : "https://login.salesforce.com/services/oauth2/token",
+    "clientId" : "",
+    "clientSecret" : "",
+    "accountProviderClass" : "org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider",
+    "smtpPassword" : null,
+    "attributeMappingClasses" : [ "org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper", "org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper" ],
+    "mapToAnonymousUser" : false,
+    "logoutBehaviour" : "prompt",
+    "createAccount" : true,
+    "_type" : {
+      "_id" : "oauth2",
+      "name" : "OAuth 2.0 / OpenID Connect",
+      "collection" : true
+    }
+  }
+}

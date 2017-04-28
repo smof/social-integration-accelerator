@@ -1,0 +1,292 @@
+#!/bin/bash
+#Social IDP integration accelerator
+#Slurps OIDC .well-known URI data and creates AM AMster importation scripts and templates
+#simon.moffatt@forgerock.com
+#27/04/2017
+
+#imports
+source .settings
+
+#Pre-reqs
+#jq is used for some further json parsing
+JQ_LOC="$(which jq)"
+if [ "$JQ_LOC" = "" ]; then
+	echo ""
+	echo "JQ JSON parser not found.  Please install - http://stedolan.github.io/jq/download/"
+	echo ""
+	exit
+fi
+
+#curl
+CURL_LOC="$(which curl)"
+if [ "$JQ_LOC" = "" ]; then
+	echo ""
+	echo "curl not found.  Please install"
+	echo ""
+	exit
+fi
+
+#main menu interface #################################################################################################################################################################################
+function menu() { 
+	
+	clear
+	echo "Social IDP Integration Accelerator for AM 5.0"
+	echo "----------------------------------------------------------------------------------"
+	echo ""
+	echo "1: Import data from OIDC .well-known URL"	
+	echo "2: Create import templates"
+	echo ""
+	echo "3: View/Edit authentication module template"
+	echo "4: View/Edit authentication chain template"
+	echo ""
+	echo "5: Import templates into AM via Amster"
+	echo ""
+	echo "X: Exit"
+	echo "C: Configure Settings (.well-known, Amster home, keys...)"
+	echo "----------------------------------------------------------------------------------"
+	echo "Select an option:"
+	read option
+
+	case $option in
+
+		1)
+			import_from_idp
+			;;	
+
+		2)
+			create_templates
+			;;
+
+		3)
+			edit_auth_module_template
+			;;
+
+		4)
+			edit_auth_chain_template
+			;;
+	
+		5)
+			import_amster
+			;;
+
+		[x] | [X])
+				clear	
+				echo "Byeeeeeeeeeeeeeeeeeee :)"
+				echo ""			
+				exit
+				;;
+	
+		[c] | [C])
+
+			config
+			;;
+
+		*)
+
+			menu
+			;;
+	esac
+
+}
+#main menu interface #################################################################################################################################################################################
+
+
+#config settings #####################################################################################################################################################################################
+function config() {
+
+	clear
+	chmod 600 .settings
+	nano .settings
+	chmod 400 .settings
+	source .settings
+	menu
+}
+
+#edit_module_template#################################################################################################################################################################################
+function edit_auth_module_template() {
+
+	clear
+	nano OAuth2SocialAuthenticationModuleTemplate.json
+	menu
+}
+
+#edit_chain_template#################################################################################################################################################################################
+function edit_auth_chain_template() {
+
+	clear
+	nano OAuth2SocialAuthenticationChainTemplate.json
+	menu
+}
+
+#import_from_idp #####################################################################################################################################################################################
+#Pulls down JSON payload from IDP and pulls out attributes we can use in our amster import script as template variables
+function import_from_idp() {
+
+	clear
+	source .settings
+	echo "Pulling down OIDC provider data from $WELL_KNOWN_URI ..."
+	WELL_KNOWN_JSON=$(curl -s $WELL_KNOWN_URI)
+	#Pull out specific attributes we can use as variables in our amster script
+	userProfileServiceUrl=$(echo $WELL_KNOWN_JSON | jq '.userinfo_endpoint')
+	scope=$(echo $WELL_KNOWN_JSON | jq '.scopes_supported' | tr -d "\n" | tr -d " " | tr -d "\"" | tr "," " " | tr "[" "\"" | tr "]" "\"")
+	openidConnectContextValue=$(echo $WELL_KNOWN_JSON | jq '.jwks_uri')
+	openidConnectIssuer=$(echo $WELL_KNOWN_JSON | jq '.issuer')
+	authenticationEndpointUrl=$(echo $WELL_KNOWN_JSON | jq '.authorization_endpoint')
+	accessTokenEndpointUrl=$(echo $WELL_KNOWN_JSON | jq '.token_endpoint')
+	moduleName=$openidConnectIssuer
+
+
+	echo "Done!"
+	echo ""
+	read -p "Press [Enter] to return to main menu"
+	menu
+}
+
+#create_templates######################################################################################################################################################################################
+#This creates amster templates
+function create_templates() {
+
+	clear
+	#Delete existing templates
+	if [ -e "OAuth2SocialAuthenticationModuleTemplate.json" ]; then 
+		rm -rf "OAuth2SocialAuthenticationModuleTemplate.json" 
+	fi
+
+	if [ -e "OAuth2SocialAuthenticationChainTemplate.json" ]; then 
+		rm -rf "OAuth2SocialAuthenticationChainTemplate.json" 
+	fi
+
+	echo "Creating file: OAuth2SocialAuthenticationModuleTemplate.json"
+
+	#Create new authentication module template file using args made in import_from_idp()
+	cat > OAuth2SocialAuthenticationModuleTemplate.json <<EOF
+{
+  "metadata" : {
+    "realm" : "$REALM",
+    "amsterVersion" : "14.0.0",
+    "entityType" : "OAuth2Module",
+    "entityId" : "MySocialAuthenticationModule",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "MySocialAuthenticationModule",
+    "mixUpMitigation" : false,
+    "ssoProxyUrl" : "$AM_HOST_URL/oauth2c/OAuthProxy.jsp",
+    "authenticationLevel" : 0,
+    "accountMapperClass" : "org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper",
+    "accountMapperConfiguration" : [ "email=uid" ],
+    "oauth2LogoutServiceUrl" : null,
+    "anonymousUserName" : "anonymous",
+    "mailGatewayClass" : "org.forgerock.openam.authentication.modules.oauth2.DefaultEmailGatewayImpl",
+    "oauth2EmailAttribute" : null,
+    "smtpHostName" : "localhost",
+    "smtpSslEnabled" : false,
+    "userProfileServiceUrl" : $userProfileServiceUrl,
+    "openidConnectContextValue" : $openidConnectContextValue,
+    "promptForPassword" : false,
+    "smtpFromAddress" : "info@forgerock.com",
+    "accessTokenParameterName" : "access_token",
+    "smtpHostPort" : "25",
+    "scope" : $scope,
+    "saveAttributesInSession" : true,
+    "openidConnectIssuer" : $openidConnectIssuer,
+    "attributeMapperConfiguration" : ["given_name=givenName", "email=uid", "family_name=sn", "name=cn", "email=mail"],
+    "smtpUsername" : null,
+    "clientSecret" : null,
+    "openidConnectContextType" : "jwk_url",
+    "authenticationEndpointUrl" : $authenticationEndpointUrl,
+    "accessTokenEndpointUrl" : $accessTokenEndpointUrl,
+    "clientId" : "",
+    "clientSecret" : "",
+    "accountProviderClass" : "org.forgerock.openam.authentication.modules.common.mapping.DefaultAccountProvider",
+    "smtpPassword" : null,
+    "attributeMappingClasses" : [ "org.forgerock.openam.authentication.modules.common.mapping.JsonAttributeMapper", "org.forgerock.openam.authentication.modules.oidc.JwtAttributeMapper" ],
+    "mapToAnonymousUser" : false,
+    "logoutBehaviour" : "prompt",
+    "createAccount" : true,
+    "_type" : {
+      "_id" : "oauth2",
+      "name" : "OAuth 2.0 / OpenID Connect",
+      "collection" : true
+    }
+  }
+}
+EOF
+
+	echo "Done!"
+	echo ""
+	echo "Creating file: OAuth2SocialAuthenticationChainTemplate.json"
+
+	#Create new authentication chain template file using args made in import_from_idp()
+	cat > OAuth2SocialAuthenticationChainTemplate.json <<EOF
+{
+  "metadata" : {
+    "realm" : "$REALM",
+    "amsterVersion" : "14.0.0",
+    "entityType" : "AuthenticationChains",
+    "entityId" : "MySocialAuthenticationChain",
+    "pathParams" : { }
+  },
+  "data" : {
+    "_id" : "MySocialAuthenticationChain",
+    "loginFailureUrl" : [ "" ],
+    "authChainConfiguration" : [ {
+      "module" : "MySocialAuthenticationModule",
+      "criteria" : "REQUIRED",
+      "options" : { }
+    } ],
+    "loginPostProcessClass" : [ ],
+    "loginSuccessUrl" : [ "" ],
+    "_type" : {
+      "_id" : "EMPTY",
+      "name" : "Authentication Configuration",
+      "collection" : true
+    }
+  }
+}
+
+EOF
+
+	echo "Done!"
+	echo ""
+	read -p "Press [Enter] to return to main menu"
+	menu
+}
+
+
+#import_amster#######################################################################################################################################################################################
+#This creates an amster script and imports
+function import_amster() {
+
+	clear
+
+	#See if existing amster script file was created
+	if [ -e "create-idp.amster" ]; then 
+		rm -rf create-idp.amster
+	fi
+	
+	echo "Creating create-idp.amster amster script..."
+
+	#Create amster script
+	cat > create-idp.amster <<EOF	
+connect "$AM_HOST_URL" -k "$AMSTER_KEY_LOCATION"
+import-config --path OAuth2SocialAuthenticationModuleTemplate.json
+import-config --path OAuth2SocialAuthenticationChainTemplate.json
+:exit
+
+EOF
+	echo "Done!"
+	echo ""
+	echo "Importing into $AM_HOST_URL..."
+	echo ""
+	$AMSTER_HOME/amster create-idp.amster
+	
+	echo "Done!"
+	echo ""
+	read -p "Press [Enter] to return to main menu"
+	menu
+
+}
+
+#initiate menu
+menu

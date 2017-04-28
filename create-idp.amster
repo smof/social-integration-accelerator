@@ -1,0 +1,5 @@
+connect "https://am5.theidentitycookbook.com:8443/openam" -k "/home/smof/am5-aws-amster_rsa"
+import-config --path OAuth2SocialAuthenticationModuleTemplate.json
+import-config --path OAuth2SocialAuthenticationChainTemplate.json
+:exit
+

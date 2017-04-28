@@ -1,0 +1,5 @@
+WELL_KNOWN_URI="https://na40.salesforce.com/.well-known/openid-configuration"
+AMSTER_HOME="/home/smof/amster-5.0"
+AM_HOST_URL="https://am5.theidentitycookbook.com:8443/openam"
+AMSTER_KEY_LOCATION="/home/smof/am5-aws-amster_rsa"
+REALM="/"
