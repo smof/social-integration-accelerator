@@ -22,7 +22,7 @@ Scripted utility to accelerate the integration of 3rd party OAuth2/OIDC complian
 ![ScreenShot](./amster-import.png) <br/>
 <br/>
 <br/>
-<b>Limitations<b/><br/>
+<b>Limitations</b><br/>
 1 - Need to add client Id and secrets manually and check mappings are accurate <br/>
 2 - If the login logo is required on the AM first screen, need to manually export the SocialAuthentication.json from AM using amster and upload necessary logo <br/>
 3 - If IDP doesn't support .well-known URL download, have to create templates and manually add in URL's <br/>
